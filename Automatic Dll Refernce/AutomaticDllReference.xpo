@@ -1,0 +1,226 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: FoxBuildAutoReference unloaded
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #FoxBuildAutoReference
+    PROPERTIES
+      Name                #FoxBuildAutoReference
+      RunOn               #Client
+      Origin              #{6312E829-967D-4694-B2A7-0D20BB1AA720}
+    ENDPROPERTIES
+    
+    METHODS
+      SOURCE #addReferences
+        #private void addReferences()
+        #{
+        #    #AOT
+        #    #Properties
+        #    TreeNode          referencesNode;
+        #    SysReference      reference;
+        #    Struct            parsedVersion;
+        #
+        #    referencesNode  = TreeNode::findNode( #ReferencesPath );
+        #
+        #    if( referencesNode )
+        #    {
+        #        while select selectedComponents
+        #        {
+        #
+        #            parsedVersion = SysReference::parseVersion(selectedComponents.Version);
+        #
+        #            reference = new SysReference(   selectedComponents.ReferenceName,
+        #                                            selectedComponents.ComponentName,
+        #                                            selectedComponents.ComponentDisplayName,
+        #                                            selectedComponents.ComponentCulture,
+        #                                            selectedComponents.ComponentPubKey,
+        #                                            parsedVersion.value('majorVersion'),
+        #                                            parsedVersion.value('minorVersion'),
+        #                                            parsedVersion.value('buildNumber'),
+        #                                            parsedVersion.value('revisionNumber'),
+        #                                            selectedComponents.Version );
+        #            reference.addToAOT();
+        #        }
+        #
+        #        referencesNode.AOTrefresh();
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #classDeclaration
+        #// C - By GROUP\PatilA3.EXT, 26-07-2017
+        #class FoxBuildAutoReference
+        #{
+        #    SysTmpGac selectedComponents;
+        #    container dllNames;
+        #}
+      ENDSOURCE
+      SOURCE #getReferences
+        #private void getReferences(str clientBin)
+        #{
+        #    str             selectedFile;
+        #    Filename        selectedFileNameOnly;
+        #    Filename        selectedFileType;
+        #    Filename        selectedFilePath;
+        #    int             i;
+        #    SysReference    reference;
+        #
+        #    for (i=1; i <= conlen(dllNames); i++)
+        #    {
+        #        selectedFile = conpeek(dllNames, i);
+        #
+        #        selectedFile = clientBin+selectedFile;
+        #
+        #        if( selectedFile )
+        #        {
+        #            [selectedFilePath, selectedFileNameOnly, selectedFileType] = fileNameSplit( selectedFile );
+        #
+        #            reference = SysReference::newFromPath( selectedFile );
+        #
+        #            if( reference )
+        #            {
+        #                selectedComponents.ComponentName        = reference.parmName();
+        #                selectedComponents.ComponentDisplayName = reference.parmDisplayName();
+        #                selectedComponents.ReferenceName        = reference.parmName();
+        #                selectedComponents.Version              = reference.parmVersion();
+        #                selectedComponents.ComponentCulture     = reference.parmCulture();
+        #                selectedComponents.ComponentPubKey      = reference.parmPublicKeyToken();
+        #
+        #                selectedComponents.insert();
+        #            }
+        #        }
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #readData
+        #/// <summary>
+        #/// Reads data from text file
+        #/// </summary>
+        #/// <param name="fileNamePath">
+        #/// File path
+        #/// </param>
+        #/// <remarks>
+        #/// C - By GROUP\PatilA3.EXT, 26-07-2017
+        #/// </remarks>
+        #/// <exception cref="Exception::Error">
+        #/// Exception Error
+        #/// </exception>
+        #
+        #private void readData(str fileNamePath= '')
+        #{
+        #    TextIo           file;
+        #    FileIoPermission permission;
+        #    #File
+        #
+        #    if(fileNamePath)
+        #    {
+        #        try
+        #        {
+        #            permission = new FileIoPermission(fileNamePath, #io_read);
+        #            permission.assert();
+        #
+        #            file = new TextIo(fileNamePath, #io_read);
+        #
+        #            if (!file)
+        #            {
+        #               throw Exception::Error;
+        #            }
+        #
+        #            file.inRecordDelimiter(#delimiterCRLF);
+        #            file.inFieldDelimiter(";");
+        #
+        #            dllNames = file.read();
+        #
+        #        }
+        #        catch(Exception::Error)
+        #        {
+        #            error("Check File Permissions");
+        #        }
+        #
+        #        CodeAccessPermission::revertAssert();
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #construct
+        #server static FoxBuildAutoReference construct()
+        #{
+        #    return new FoxBuildAutoReference();
+        #}
+      ENDSOURCE
+      SOURCE #runAutoRef
+        #/// <summary>
+        #/// Will be used to Build Automation for adding dll refernces
+        #/// </summary>
+        #/// <param name="_filePath">
+        #/// File Path
+        #/// </param>
+        #/// <param name="clbin">
+        #/// Client Bin Path
+        #/// </param>
+        #/// <remarks>
+        #/// C - By GROUP\PatilA3.EXT, 26-07-2017
+        #/// </remarks>
+        #/// <exception cref="Exception::Error">
+        #/// Exception
+        #/// </exception>
+        #
+        #public static void runAutoRef(FilePath _filePath,str clbin)
+        #{
+        #    FoxBuildAutoReference   foxBuildAutoReference;
+        #
+        #    foxBuildAutoReference = FoxBuildAutoReference::construct();
+        #
+        #    try
+        #    {
+        #        foxBuildAutoReference.readData(_filePath);
+        #        foxBuildAutoReference.getReferences(clbin);
+        #        foxBuildAutoReference.addReferences();
+        #    }
+        #    catch(Exception::Error)
+        #    {
+        #         throw error("Import of dll references failed");
+        #    }
+        #
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: PRN
+
+; Microsoft Dynamics AX Project : AutomaticDllReference unloaded
+; --------------------------------------------------------------------------------
+  PROJECTVERSION 2
+  
+  PROJECT #AutomaticDllReference
+  SHARED
+  PROPERTIES
+    Name                #AutomaticDllReference
+    Origin              #{24F8668E-8B92-438E-8F4C-02D01F912BFE}
+  ENDPROPERTIES
+  
+    PROJECTCLASS ProjectNode
+    GROUP #Classes
+      PROPERTIES
+        Name                #Classes
+        ProjectGroupType    #Classes
+        GroupMask           #
+        PreventEditProperties #No
+      ENDPROPERTIES
+      
+      BEGINNODE
+        FILETYPE 0
+        UTILTYPE 45
+        UTILOBJECTID 1091358
+        NODETYPE 329
+        NAME #FoxBuildAutoReference
+      ENDNODE
+      ENDGROUP
+      
+  ENDPROJECT
+  
+
+***Element: END
