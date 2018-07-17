@@ -1,0 +1,1582 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: FoxLabelFinder unloaded
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #FoxLabelFinder
+    PROPERTIES
+      Name                #FoxLabelFinder
+      Origin              #{5AA6673F-0C1A-44B6-954B-66D06666F321}
+    ENDPROPERTIES
+    
+    METHODS
+      SOURCE #classDeclaration
+        #// C - By GROUP\PatilA3.EXT, 21-06-2017, <Report Label Finder>
+        #class FoxLabelFinder
+        #{
+        #    #define.PropertyString("Property")
+        #    xRefTmpReferences      allTmpxRefReferences;
+        #    FoxLabelFinderTmpTable foxLabelFinderTmpTable;
+        #}
+      ENDSOURCE
+      SOURCE #fillTmpXref
+        #///
+        #///This function is a utility function which will take the xref from enumerator and insert
+        #/// into xRefTmpReferences table
+        #///
+        #void fillTmpXref(MapEnumerator enum, TreeNode aNode)
+        #{
+        #    xRefTmpReferences            tmpxRefReferences;
+        #
+        #    while (enum.moveNext())
+        #    {
+        #        if (substr(enum.currentKey(),1,strlen(aNode.treeNodePath())) == aNode.treeNodePath())
+        #        {
+        #            tmpxRefReferences = xRefCreate::makeTmp(enum.currentValue(), enum.currentKey());
+        #
+        #            while select tmpxRefReferences
+        #                group by tmpxRefReferences.name
+        #                   where tmpxRefReferences.Kind == xRefKind::Label
+        #            {
+        #                 foxLabelFinderTmpTable.LabelID  = tmpxRefReferences.name;
+        #                 foxLabelFinderTmpTable.English  = SysLabel::labelId2String(foxLabelFinderTmpTable.LabelID,"en-us");
+        #                 foxLabelFinderTmpTable.Finnish  = SysLabel::labelId2String(foxLabelFinderTmpTable.LabelID,"fi");
+        #                 foxLabelFinderTmpTable.Swedish  = SysLabel::labelId2String(foxLabelFinderTmpTable.LabelID,"sv");
+        #
+        #                 this.refineEmptyLabels();
+        #
+        #                 foxLabelFinderTmpTable.insert();
+        #            }
+        #        }
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #fillTmpxRefReferences
+        #void fillTmpxRefReferences(TreeNode aNode)
+        #{
+        #    // xRefTmpReferences tmpxRefReferences;
+        #    TreeNodeTraverser treeNodeTraverser;
+        #
+        #    // Map to store xref information generated during compile time
+        #    Map compileMap = new Map(Types::String, Types::Class);
+        #
+        #    // Map to store xref information generated during property sweep time
+        #    Map propertyMap = new Map(Types::String, Types::Class);
+        #
+        #    str className;
+        #    MapEnumerator enum;
+        #    ;
+        #
+        #    appl.updatexRefSet(true);
+        #    treeNodeTraverser = new TreeNodeTraverser(aNode);
+        #    treeNodeTraverser.next();
+        #
+        #    appl.globalCache().set(classstr(xRefUpdateTmpReferences), '', compileMap);
+        #
+        #
+        #    className = classstr(xRefUpdateTmpReferences);
+        #    className = strins(className,#PropertyString,strlen(classname)+1);
+        #    appl.globalCache().set(className, '', propertyMap);
+        #
+        #    treeNodeTraverser.currentNode().AOTmakeXref(1);
+        #
+        #    appl.globalCache().set(classstr(xRefUpdateTmpReferences), '', null);
+        #    appl.globalCache().set(className, '', null);
+        #
+        #    appl.updatexRefSet(false);
+        #
+        #    // Store the compile xref infomation in database
+        #    enum = compileMap.getEnumerator();
+        #    this.fillTmpXref(enum,aNode);
+        #
+        #    // Store the property xref infomation in database
+        #    enum = propertyMap.getEnumerator();
+        #
+        #    this.fillTmpXref(enum,aNode);
+        #}
+      ENDSOURCE
+      SOURCE #getLabelFinderTable
+        #public FoxLabelFinderTmpTable getLabelFinderTable()
+        #{
+        #    return foxLabelFinderTmpTable;
+        #}
+      ENDSOURCE
+      SOURCE #refineEmptyLabels
+        #public void refineEmptyLabels()
+        #{
+        #    if(foxLabelFinderTmpTable.English == foxLabelFinderTmpTable.LabelID)
+        #    {
+        #        foxLabelFinderTmpTable.English = '';
+        #    }
+        #
+        #    if(foxLabelFinderTmpTable.Finnish == foxLabelFinderTmpTable.LabelID)
+        #    {
+        #        foxLabelFinderTmpTable.Finnish = '';
+        #    }
+        #
+        #    if(foxLabelFinderTmpTable.Swedish == foxLabelFinderTmpTable.LabelID)
+        #    {
+        #        foxLabelFinderTmpTable.Swedish = '';
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #main
+        #// C - By GROUP\PatilA3.EXT, 21-06-2017, <Report Label Finder>
+        #public static void main(Args args)
+        #{
+        #    TreeNode                treeNode,contextNode;
+        #    FoxLabelFinder          foxLabelFinder;
+        #    FoxLabelFinderTmpTable  foxLabelFinderTmpTable;
+        #    Args                    tmpTableArgs;
+        #    str                     objectName;
+        #
+        #    foxLabelFinder = new FoxLabelFinder();
+        #
+        #    if(SysContextMenu::startedFrom(args))
+        #    {
+        #        contextNode = args.parmObject().first();
+        #        treeNode = SysTreeNode::getNode(contextNode);
+        #        foxLabelFinder.fillTmpxRefReferences(treeNode);
+        #
+        #        foxLabelFinderTmpTable = foxLabelFinder.getLabelFinderTable();
+        #
+        #        if(foxLabelFinderTmpTable)
+        #        {
+        #            args = new Args();
+        #            args.record(foxLabelFinderTmpTable);
+        #            args.parmObject(treeNode);
+        #            new MenuFunction(menuItemDisplayStr(FoxLabelFinder), MenuItemType::Display).run(args);
+        #        }
+        #        else
+        #        {
+        #            info("No lables found");
+        #        }
+        #    }
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: FRM
+
+; Microsoft Dynamics AX Forms unloaded
+; --------------------------------------------------------------------------------
+FRMVERSION 12
+
+FORM #FoxLabelFinder
+  PROPERTIES
+    Name                #FoxLabelFinder
+    Origin              #{EFF2ECF9-B05D-4209-AE67-108AE83DA809}
+  ENDPROPERTIES
+  
+  METHODS
+    SOURCE #classDeclaration
+      #public class FormRun extends ObjectRun
+      #{
+      #    SysFormSplitter_X      verticalSplitter;
+      #    FoxLabelFinderTmpTable foxLabelTableTmp;
+      #    TreeNode               aotNode;
+      #}
+    ENDSOURCE
+    SOURCE #findInObject
+      #public void findInObject()
+      #{
+      #    Args                args = new Args(formstr(SysAOTFind));
+      #    FormRun             sysAOTFindFormRun;
+      #    FormStringControl   containingTextCtrl;
+      #    FormButtonControl   findNowBtnCtrl;
+      #    FormComboBoxControl searchInButtonCtrl;
+      #
+      #    sysAOTFindFormRun = classFactory.formRunClass(args);
+      #    sysAOTFindFormRun.init();
+      #    sysAOTFindFormRun.run();
+      #
+      #
+      #    // Paste in Containing Control
+      #    containingTextCtrl = sysAOTFindFormRun.design().controlName(identifierStr(ContainingText));
+      #    containingTextCtrl.setFocus();
+      #    containingTextCtrl.pasteText(FoxLabelFinderTmpTable_LabelID.text());
+      #
+      #    // Search in All Nodes
+      #    if(aotNode.utilElement().recordType == UtilElementType::Table)
+      #    {
+      #        searchInButtonCtrl = sysAOTFindFormRun.design().controlName(identifierStr(Search));
+      #        searchInButtonCtrl.setFocus();
+      #        searchInButtonCtrl.selectText("All nodes");
+      #    }
+      #
+      #
+      #    sysAOTFindFormRun.detach();
+      #
+      #    // Auto Search
+      #    findNowBtnCtrl = sysAOTFindFormRun.design().controlName(identifierStr(FindNow));
+      #    findNowBtnCtrl.clicked();
+      #}
+    ENDSOURCE
+    SOURCE #findMissingTranslations
+      #public void findMissingTranslations()
+      #{
+      #    FoxLabelFinderTmpTable_ds.query().dataSourceTable( tableNum(FoxLabelFinderTmpTable)).addRange(fieldNum(FoxLabelFinderTmpTable,RecId))
+      #                                     .value(strFmt('((%1 == %4) || (%2 == %4) || (%3 == %4)) ',
+      #                                            fieldStr(FoxLabelFinderTmpTable, English),
+      #                                            fieldStr(FoxLabelFinderTmpTable, Finnish),
+      #                                            fieldStr(FoxLabelFinderTmpTable, Swedish),
+      #                                            SysQuery::valueEmptyString()));
+      #
+      #    FoxLabelFinderTmpTable_ds.executeQuery();
+      #}
+    ENDSOURCE
+    SOURCE #findSafeLabels
+      #private void findSafeLabels()
+      #{
+      #}
+    ENDSOURCE
+    SOURCE #init
+      #public void init()
+      #{
+      #    super();
+      #
+      #    if(element.args() && element.args().record())
+      #    {
+      #        foxLabelTableTmp = element.args().record();
+      #        FoxLabelFinderTmpTable.setTmpData(foxLabelTableTmp);
+      #
+      #        //Get Node
+      #        aotNode = element.args().parmObject();
+      #
+      #        //Set Object Name
+      #        element.design().caption(aotNode.AOTname());
+      #    }
+      #}
+    ENDSOURCE
+    SOURCE #openLabelForm
+      #public void openLabelForm()
+      #{
+      #    Args            args;
+      #    FormRun         fr;
+      #
+      #    FoxLabelFinderTmpTable_LabelID.setFocus();
+      #
+      #    args = new Args();
+      #    args.name(formStr(SysLabelLookup));
+      #    args.caller(FoxLabelFinderTmpTable_LabelID);
+      #    args.parm(FoxLabelFinderTmpTable_LabelID.text());
+      #
+      #    fr = ClassFactory::formRunClassOnClient(args);
+      #    fr.init();
+      #    FoxLabelFinderTmpTable_LabelID.performFormLookup(fr);
+      #}
+    ENDSOURCE
+    SOURCE #resetRanges
+      #public void resetRanges()
+      #{
+      #    FoxLabelFinderTmpTable_ds.query().dataSourceTable(tableNum(FoxLabelFinderTmpTable)).clearRanges();
+      #    FoxLabelFinderTmpTable_ds.executeQuery();
+      #}
+    ENDSOURCE
+  ENDMETHODS
+  OBJECTBANK
+    PROPERTIES
+    ENDPROPERTIES
+    
+    DATASOURCE
+      OBJECTPOOL
+        PROPERTIES
+          Name                #FoxLabelFinderTmpTable
+          Table               #FoxLabelFinderTmpTable
+          AllowEdit           #No
+          AllowCreate         #No
+          AllowDelete         #No
+        ENDPROPERTIES
+        
+        FIELDLIST
+        ENDFIELDLIST
+      ENDOBJECTPOOL
+      METHODS
+      ENDMETHODS
+    ENDDATASOURCE
+  ENDOBJECTBANK
+  
+  REFERENCEDATASOURCES
+  ENDREFERENCEDATASOURCES
+  
+  JOINS
+  ENDJOINS
+  
+  PARTREFERENCES
+  ENDPARTREFERENCES
+  
+  DESIGN
+    PROPERTIES
+      Width               #Column width
+      Height              #Column height
+      SaveSize            #No
+      Style               #SimpleList
+    ENDPROPERTIES
+    
+    CONTAINER
+      CONTROL ACTIONPANE
+        PROPERTIES
+          Name                #ActionPane
+          ElementPosition     #429496729
+          Style               #Strip
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL ACTIONPANETAB
+        PROPERTIES
+          Name                #ActionPaneTab
+          ElementPosition     #1431655764
+          HierarchyParent     #ActionPane
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL BUTTONGROUP
+        PROPERTIES
+          Name                #Actions
+          ElementPosition     #1073741822
+          HierarchyParent     #ActionPaneTab
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL BUTTONGROUP
+        PROPERTIES
+          Name                #Search
+          ElementPosition     #715827880
+          HierarchyParent     #ActionPaneTab
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL GRID
+        PROPERTIES
+          Name                #Grid
+          Width               #Column width
+          Height              #Column height
+          ElementPosition     #1431655764
+          HierarchyParent     #GridContainer
+          ShowRowLabels       #No
+          DataSource          #FoxLabelFinderTmpTable
+          AlternateRowShading #No
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL GROUP
+        PROPERTIES
+          Name                #CustomFilterGroup
+          Visible             #No
+          ElementPosition     #1288490187
+          Style               #DetailTitleContainer
+          AlignChild          #No
+          ViewEditMode        #Edit
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL GROUP
+        PROPERTIES
+          Name                #GridContainer
+          Width               #Column width
+          Height              #Column height
+          ElementPosition     #1717986916
+          Style               #BorderlessGridContainer
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL GROUP
+        PROPERTIES
+          Name                #PageTitleGroup
+          Visible             #No
+          ElementPosition     #858993458
+          Style               #DetailTitleContainer
+          AlignChild          #No
+          ViewEditMode        #View
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL BUTTON
+        PROPERTIES
+          Name                #ClearRange
+          ElementPosition     #954437176
+          HierarchyParent     #Actions
+          Text                #Show All
+        ENDPROPERTIES
+        
+        METHODS
+          SOURCE #clicked
+            #void clicked()
+            #{
+            #    super();
+            #
+            #    element.resetRanges();
+            #}
+          ENDSOURCE
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL BUTTON
+        PROPERTIES
+          Name                #Edit
+          ElementPosition     #954437176
+          HierarchyParent     #Search
+          Text                #Edit
+        ENDPROPERTIES
+        
+        METHODS
+          SOURCE #clicked
+            #void clicked()
+            #{
+            #    super();
+            #
+            #    element.openLabelForm();
+            #}
+          ENDSOURCE
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL BUTTON
+        PROPERTIES
+          Name                #LocationUsed
+          ElementPosition     #1431655764
+          HierarchyParent     #Search
+          Text                #Find Location
+        ENDPROPERTIES
+        
+        METHODS
+          SOURCE #clicked
+            #void clicked()
+            #{
+            #    super();
+            #
+            #    element.findInObject();
+            #}
+          ENDSOURCE
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL BUTTON
+        PROPERTIES
+          Name                #MissingTranslations
+          ElementPosition     #1431655764
+          HierarchyParent     #Actions
+          Text                #Misssing Translations
+        ENDPROPERTIES
+        
+        METHODS
+          SOURCE #clicked
+            #void clicked()
+            #{
+            #    super();
+            #
+            #    element.findMissingTranslations();
+            #}
+          ENDSOURCE
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL STRINGEDIT
+        PROPERTIES
+          Name                #FoxLabelFinderTmpTable_English
+          ElementPosition     #1073741823
+          HierarchyParent     #Grid
+          DataSource          #FoxLabelFinderTmpTable
+          DataField           #English
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL STRINGEDIT
+        PROPERTIES
+          Name                #FoxLabelFinderTmpTable_Finnish
+          ElementPosition     #1431655764
+          HierarchyParent     #Grid
+          DataSource          #FoxLabelFinderTmpTable
+          DataField           #Finnish
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL STRINGEDIT
+        PROPERTIES
+          Name                #FoxLabelFinderTmpTable_LabelID
+          AutoDeclaration     #Yes
+          ElementPosition     #715827882
+          HierarchyParent     #Grid
+          DataSource          #FoxLabelFinderTmpTable
+          DataField           #LabelID
+        ENDPROPERTIES
+        
+        METHODS
+          SOURCE #jumpRef
+            #public void jumpRef()
+            #{
+            #    super();
+            #
+            #    element.openLabelForm();
+            #}
+          ENDSOURCE
+          SOURCE #mouseDblClick
+            #public int mouseDblClick(int _x, int _y, int _button, boolean _Ctrl, boolean _Shift)
+            #{
+            #    int ret;
+            #
+            #    ret = super(_x, _y, _button, _Ctrl, _Shift);
+            #
+            #    element.findInObject();
+            #
+            #    return ret;
+            #}
+          ENDSOURCE
+        ENDMETHODS
+      ENDCONTROL 
+      
+      CONTROL STRINGEDIT
+        PROPERTIES
+          Name                #FoxLabelFinderTmpTable_Swedish
+          ElementPosition     #1789569705
+          HierarchyParent     #Grid
+          DataSource          #FoxLabelFinderTmpTable
+          DataField           #Swedish
+        ENDPROPERTIES
+        
+        METHODS
+        ENDMETHODS
+      ENDCONTROL 
+      
+    ENDCONTAINER
+    
+  ENDDESIGN
+  
+  PERMISSIONS #Permissions
+    PROPERTIES
+    ENDPROPERTIES
+    
+    PERMISSIONSET #Read
+      PROPERTIES
+      ENDPROPERTIES
+      
+      FORM #Controls
+      ENDFORM
+      
+    TABLES #Tables
+    ENDTABLES
+    
+  SERVERMETHODS #Server Methods
+  ENDSERVERMETHODS
+  
+ASSOCIATEDFORMS #Associated Forms
+ENDASSOCIATEDFORMS
+
+ENDPERMISSIONSET
+
+PERMISSIONSET #Update
+  PROPERTIES
+  ENDPROPERTIES
+  
+  FORM #Controls
+  ENDFORM
+  
+TABLES #Tables
+ENDTABLES
+
+SERVERMETHODS #Server Methods
+ENDSERVERMETHODS
+
+ASSOCIATEDFORMS #Associated Forms
+ENDASSOCIATEDFORMS
+
+ENDPERMISSIONSET
+
+PERMISSIONSET #Create
+  PROPERTIES
+  ENDPROPERTIES
+  
+  FORM #Controls
+  ENDFORM
+  
+TABLES #Tables
+ENDTABLES
+
+SERVERMETHODS #Server Methods
+ENDSERVERMETHODS
+
+ASSOCIATEDFORMS #Associated Forms
+ENDASSOCIATEDFORMS
+
+ENDPERMISSIONSET
+
+PERMISSIONSET #Delete
+  PROPERTIES
+  ENDPROPERTIES
+  
+  FORM #Controls
+  ENDFORM
+  
+TABLES #Tables
+ENDTABLES
+
+SERVERMETHODS #Server Methods
+ENDSERVERMETHODS
+
+ASSOCIATEDFORMS #Associated Forms
+ENDASSOCIATEDFORMS
+
+ENDPERMISSIONSET
+
+ENDPERMISSIONS
+
+ENDFORM
+
+
+***Element: DBT
+
+; Microsoft Dynamics AX Table : FoxLabelFinderTmpTable unloaded
+; --------------------------------------------------------------------------------
+  TABLEVERSION 1
+  
+  TABLE #FoxLabelFinderTmpTable
+    EnforceFKRelation 1
+    PROPERTIES
+      Name                #FoxLabelFinderTmpTable
+      TableType           #InMemory
+      CreateRecIdIndex    #Yes
+      PrimaryIndex        #SurrogateKey
+      ClusterIndex        #SurrogateKey
+      Origin              #{95117758-1249-4C57-826D-EE2AA837F196}
+    ENDPROPERTIES
+    
+    FIELDS
+      FIELD #English
+        STRING
+        PROPERTIES
+          Name                #English
+          Table               #FoxLabelFinderTmpTable
+          Origin              #{27F11F0D-15D4-4961-8BD9-654E03F390B2}
+          ExtendedDataType    #LabelType
+          StringSize          #1999
+        ENDPROPERTIES
+        
+      FIELD #Finnish
+        STRING
+        PROPERTIES
+          Name                #Finnish
+          Table               #FoxLabelFinderTmpTable
+          Origin              #{53CDDDF9-6729-4DE3-A842-FB9C9387BD87}
+          ExtendedDataType    #LabelType
+          StringSize          #1999
+        ENDPROPERTIES
+        
+      FIELD #LabelID
+        STRING
+        PROPERTIES
+          Name                #LabelID
+          Table               #FoxLabelFinderTmpTable
+          Origin              #{053DDFA3-2B9C-4C56-B7C7-B4350D692035}
+          ExtendedDataType    #LabelId
+          StringSize          #14
+        ENDPROPERTIES
+        
+      FIELD #Swedish
+        STRING
+        PROPERTIES
+          Name                #Swedish
+          Table               #FoxLabelFinderTmpTable
+          Origin              #{6081D6CA-42C4-4136-9C15-B015D66AE100}
+          ExtendedDataType    #LabelType
+          StringSize          #1999
+        ENDPROPERTIES
+        
+    ENDFIELDS
+    GROUPS
+    ENDGROUPS
+    
+    INDICES
+    ENDINDICES
+    FULLTEXTINDICES
+    ENDFULLTEXTINDICES
+    REFERENCES
+    ENDREFERENCES
+    
+    DELETEACTIONS
+    ENDDELETEACTIONS
+    
+    METHODS
+    ENDMETHODS
+  ENDTABLE
+  
+
+***Element: MNU
+
+; Microsoft Dynamics AX Menu : SysContextMenu unloaded
+; --------------------------------------------------------------------------------
+  MNUVERSION 5
+  
+  MENU #SysContextMenu
+    PROPERTIES
+      Name                #SysContextMenu
+      Label               #@SYS28637
+      SecurityKey         #SysDevelopment
+      Origin              #{100E0000-0000-1000-FB09-5DBF82A26477}
+    ENDPROPERTIES
+    
+    MENUITEM
+      PROPERTIES
+        Name                #Compare existing code to proposed fix
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeConflictCodeRuleCompareUpgrade
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Auto-resolve source code rule conflict
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeConflictCodeRuleAutoResolve
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Compare altered code to original code
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeConflictCodeRuleCompareOrigina
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Revert auto-resolve source code rule conflict
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeConflictCodeRuleRevertResolve
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Mark as resolved
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeProjectMarkAsResolved
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Mark as unresolved
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeProjectMarkAsUnresolved
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Mark as resolved (including subnodes)
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeProjectMarkAsResolvedRecursive
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Mark as unresolved (including subnodes)
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeProjectMarkAsUnresolvedRecursi
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Rerun conflict detection
+        MenuItemType        #Action
+        MenuItemName        #SysUpgradeDetectConflictsRerun
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    SEPARATOR
+    MENU #@SYS24666
+      PROPERTIES
+        Name                #MenuxRef
+        Label               #@SYS24666
+      ENDPROPERTIES
+      
+      MENUITEM
+        PROPERTIES
+          Name                #Used by
+          MenuItemName        #XRefReferencesUsedBy
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Using (instant view)
+          MenuItemType        #Action
+          MenuItemName        #xRefUpdateTmpReferences
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Names
+          MenuItemName        #XRefNames
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Using
+          MenuItemName        #XRefReferencesUsing
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Update
+          MenuItemType        #Action
+          MenuItemName        #xRefUpdate
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+    ENDMENU
+    MENU #@SYS310448
+      PROPERTIES
+        Name                #SecTools
+        Label               #@SYS310448
+      ENDPROPERTIES
+      
+      MENUITEM
+        PROPERTIES
+          Name                #XRef analyser
+          MenuItemName        #syssecanalysisaddIn
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Metadata analyser
+          MenuItemName        #syssecanalysisaddInmetadataAnalyzer
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #View related security roles
+          MenuItemName        #SysSecObjectsAnalyze
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #View related security objects
+          MenuItemName        #SysSecObjectsInRole
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Apply changes
+          MenuItemType        #Action
+          MenuItemName        #SysSecSecurityApply
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #*SysSecRoleEntryPointDeveloper*
+          MenuItemName        #SysSecRoleEntryPointDeveloper
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+    ENDMENU
+    SEPARATOR
+    MENUITEM
+      PROPERTIES
+        Name                #Table browser
+        MenuItemName        #sysTableBrowser
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Auto-report
+        MenuItemName        #SysTableForm
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    SEPARATOR
+    MENUITEM
+      PROPERTIES
+        Name                #Reverse engineer
+        MenuItemName        #SysVisioAddIn
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Extract XML documentation
+        MenuItemType        #Output
+        MenuItemName        #SysXmlDocumentationCreateFile
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Run tests
+        MenuItemType        #Action
+        MenuItemName        #SysTestToolbarOpen
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Type hierarchy browser
+        MenuItemName        #SysTypeHierarchyBrowser
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    SEPARATOR
+    MENUITEM
+      PROPERTIES
+        Name                #Compare
+        MenuItemType        #Action
+        MenuItemName        #sysCompare
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Compile forward
+        MenuItemType        #Action
+        MenuItemName        #sysCompileForward
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Impact Analysis
+        MenuItemType        #Action
+        MenuItemName        #SysImpactAnalysis
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Find and replace
+        MenuItemType        #Action
+        MenuItemName        #SysSourceReplaceText
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Syntactic renaming
+        MenuItemType        #Action
+        MenuItemName        #SysSourceReplaceSyntax
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Duplicates
+        MenuItemName        #SysDictIndexShowDuplicates
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENU #@SYS16245
+      PROPERTIES
+        Name                #MenuCopy
+        Label               #@SYS16245
+        NeededAccessLevel   #NoAccess
+      ENDPROPERTIES
+      
+      MENUITEM
+        PROPERTIES
+          Name                #Entire path
+          MenuItemType        #Action
+          MenuItemName        #SysTreeNodePathCopyToClipboard
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Name
+          MenuItemType        #Action
+          MenuItemName        #SysTreeNodeNameCopyToClipboard
+          ShortCut            #Shift+C
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Copy to current layer
+          MenuItemType        #Action
+          MenuItemName        #systreenodecopyToCurrentLayer
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+    ENDMENU
+    MENUITEM
+      PROPERTIES
+        Name                #Check best practices
+        MenuItemType        #Action
+        MenuItemName        #SysBPCheck
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Check form style best practices
+        MenuItemName        #SysBPStyleCheckAnalysis
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Source code title case update
+        MenuItemType        #Action
+        MenuItemName        #SysSourceNameWash
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Generate Axd query
+        MenuItemType        #Action
+        MenuItemName        #AxdGenerateAxdQuery
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #AIF Document Service Wizard
+        MenuItemName        #AxdWizard
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Register service
+        MenuItemType        #Action
+        MenuItemName        #AifRegisterService
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Fox Get Latest
+        MenuItemType        #Action
+        MenuItemName        #FoxGetLatest
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Fox Label Finder
+        MenuItemType        #Action
+        MenuItemName        #FoxLabelFinder
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Help properties
+        MenuItemName        #HelpTopicID
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Lookup in Issue Search
+        MenuItemName        #SysLcsIssueSearchAotItem
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    SEPARATOR
+    MENU #@SYS53405
+      PROPERTIES
+        Name                #SysContextMenuOpenNewWindow
+        Label               #@SYS53405
+        SetCompany          #Yes
+      ENDPROPERTIES
+      
+      MENUITEM
+        PROPERTIES
+          Name                #Open application object window
+          MenuItemType        #Action
+          MenuItemName        #SysTreeNodeApplObjectOpenNewWindow
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open parent in window
+          MenuItemType        #Action
+          MenuItemName        #SysTreeNodeParentOpenNewWindow
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open new window
+          MenuItemType        #Action
+          MenuItemName        #SysTreeNodeOpenNewWindow
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENU #@SYS57839
+        PROPERTIES
+          Name                #MenuOpenOldLayer
+          Label               #@SYS57839
+          NeededAccessLevel   #NoAccess
+        ENDPROPERTIES
+        
+        MENUITEM
+          PROPERTIES
+            Name                #usp
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldUsp
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #usr
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldUsr
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #cup
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldCup
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #cus
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldCus
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #vap
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldVap
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #var
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldVar
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #isp
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldIsp
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #isv
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldIsv
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #slp
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldSlp
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #sln
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldSln
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #fpp
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldFpp
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #fpk
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldFpk
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #glp
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldGlp
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #gls
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldGls
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #syp
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldSyp
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+        MENUITEM
+          PROPERTIES
+            Name                #sys
+            MenuItemType        #Action
+            MenuItemName        #SysOpenOldSys
+          ENDPROPERTIES
+          
+        ENDMENUITEM
+      ENDMENU
+      MENUITEM
+        PROPERTIES
+          Name                #Open used table
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowTable
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open used table field group
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowFieldGroup
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open used Extended Data Type
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowExtendedType
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open used Enum
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowEnum
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open used class
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowClass
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open used form
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowForm
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open used report
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowReport
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+      MENUITEM
+        PROPERTIES
+          Name                #Open used menu item
+          MenuItemType        #Action
+          MenuItemName        #SysOpenNewWindowMenuItem
+        ENDPROPERTIES
+        
+      ENDMENUITEM
+    ENDMENU
+    MENUITEM
+      PROPERTIES
+        Name                #Properties
+        MenuItemType        #Action
+        MenuItemName        #SysTreeNodeShowProperties
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Full CIL generation from X++
+        MenuItemType        #Action
+        MenuItemName        #SysXppILFullBuild
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Incremental CIL generation from X++
+        MenuItemType        #Action
+        MenuItemName        #SysXppILIncrementalBuild
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Approval wizard...
+        MenuItemName        #WorkflowAOTWizardApproval
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Task wizard...
+        MenuItemName        #WorkflowAOTWizardTask
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Workflow type wizard...
+        MenuItemName        #WorkflowAOTWizardType
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #FOX version management
+        MenuItemName        #FoxtfsVersionControl
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Fox Temp Label Correction
+        MenuItemType        #Action
+        MenuItemName        #FoxTempLabelCorrection
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+    MENUITEM
+      PROPERTIES
+        Name                #Add technical info
+        MenuItemType        #Action
+        MenuItemName        #TieAddToTechDocJob
+      ENDPROPERTIES
+      
+    ENDMENUITEM
+  ENDMENU
+  
+
+***Element: FTM
+
+; Microsoft Dynamics AX MENUITEM : FoxLabelFinder unloaded
+; --------------------------------------------------------------------------------
+  VERSION 1
+  
+  MENUITEM #FoxLabelFinder
+    Type: 3
+    PROPERTIES
+      Name                #FoxLabelFinder
+      Label               #Fox Label Finder
+      ObjectType          #Class
+      Object              #FoxLabelFinder
+      Origin              #{C23752AF-1961-4A48-88A9-DA210EF99903}
+    ENDPROPERTIES
+    
+  ENDMENUITEM
+  
+
+***Element: FTM
+
+; Microsoft Dynamics AX MENUITEM : FoxLabelFinder unloaded
+; --------------------------------------------------------------------------------
+  VERSION 1
+  
+  MENUITEM #FoxLabelFinder
+    Type: 1
+    PROPERTIES
+      Name                #FoxLabelFinder
+      Object              #FoxLabelFinder
+      Parameters          #FoxLabelFinderTmpTable
+      Origin              #{AF19FA85-E69E-4EA5-9848-C5A045160D04}
+    ENDPROPERTIES
+    
+  ENDMENUITEM
+  
+
+***Element: PRN
+
+; Microsoft Dynamics AX Project : FoxLabelFinder unloaded
+; --------------------------------------------------------------------------------
+  PROJECTVERSION 2
+  
+  PROJECT #FoxLabelFinder
+  SHARED
+  PROPERTIES
+    Name                #FoxLabelFinder
+    Origin              #{F2A56AFF-AB71-4DA0-9091-644A50506383}
+  ENDPROPERTIES
+  
+    PROJECTCLASS ProjectNode
+    GROUP #Classes
+      PROPERTIES
+        Name                #Classes
+        ProjectGroupType    #Classes
+        GroupMask           #
+        PreventEditProperties #No
+      ENDPROPERTIES
+      
+      BEGINNODE
+        FILETYPE 0
+        UTILTYPE 45
+        UTILOBJECTID 1103124
+        NODETYPE 329
+        NAME #FoxLabelFinder
+      ENDNODE
+      ENDGROUP
+      
+    GROUP #Forms
+      PROPERTIES
+        Name                #Forms
+        ProjectGroupType    #Forms
+        GroupMask           #
+        PreventEditProperties #No
+      ENDPROPERTIES
+      
+      BEGINNODE
+        FILETYPE 0
+        UTILTYPE 11
+        UTILOBJECTID 0
+        NODETYPE 201
+        NAME #FoxLabelFinder
+      ENDNODE
+      ENDGROUP
+      
+    GROUP #Tables
+      PROPERTIES
+        Name                #Tables
+        ProjectGroupType    #Tables
+        GroupMask           #
+        PreventEditProperties #No
+      ENDPROPERTIES
+      
+      BEGINNODE
+        FILETYPE 0
+        UTILTYPE 44
+        UTILOBJECTID 143818
+        NODETYPE 204
+        NAME #FoxLabelFinderTmpTable
+      ENDNODE
+      ENDGROUP
+      
+    GROUP #Menu
+      PROPERTIES
+        Name                #Menu
+        ProjectGroupType    #Menus
+        GroupMask           #
+        PreventEditProperties #No
+      ENDPROPERTIES
+      
+      BEGINNODE
+        FILETYPE 0
+        UTILTYPE 16
+        UTILOBJECTID 0
+        NODETYPE 205
+        NAME #SysContextMenu
+      ENDNODE
+      ENDGROUP
+      
+    GROUP #Action
+      PROPERTIES
+        Name                #Action
+        ProjectGroupType    #Action
+        GroupMask           #
+        PreventEditProperties #No
+      ENDPROPERTIES
+      
+      BEGINNODE
+        FILETYPE 0
+        UTILTYPE 3
+        UTILOBJECTID 0
+        NODETYPE 296
+        NAME #FoxLabelFinder
+      ENDNODE
+      ENDGROUP
+      
+    GROUP #Display
+      PROPERTIES
+        Name                #Display
+        ProjectGroupType    #Display
+        GroupMask           #
+        PreventEditProperties #No
+      ENDPROPERTIES
+      
+      BEGINNODE
+        FILETYPE 0
+        UTILTYPE 1
+        UTILOBJECTID 0
+        NODETYPE 296
+        NAME #FoxLabelFinder
+      ENDNODE
+      ENDGROUP
+      
+  ENDPROJECT
+  
+
+***Element: END
